@@ -16,7 +16,7 @@ keyframes/
 */*.npz
 debug*/
 .hydra/
-output/
+output
 ckpt/
 dependency/
 # Byte-compiled / optimized / DLL files

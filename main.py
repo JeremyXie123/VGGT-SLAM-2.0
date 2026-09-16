@@ -14,7 +14,7 @@ import vggt_slam.slam_utils as utils
 from vggt_slam.solver import Solver
 from vggt_slam.submap import Submap
 
-from vggt.models.vggt import VGGT
+from vggt_slam.vggt_omega_wrapper import VGGTOmegaModel
 
 parser = argparse.ArgumentParser(description="VGGT-SLAM demo")
 parser.add_argument("--image_folder", type=str, default="examples/kitchen/images/", help="Path to folder containing images")
@@ -32,7 +32,7 @@ parser.add_argument("--max_loops", type=int, default=1, help="ONLY DEFAULT OF 1 
 parser.add_argument("--min_disparity", type=float, default=50, help="Minimum disparity to generate a new keyframe")
 parser.add_argument("--conf_threshold", type=float, default=25.0, help="Initial percentage of low-confidence points to filter out")
 parser.add_argument("--lc_thres", type=float, default=0.95, help="Threshold for image retrieval. Range: [0, 1.0]. Higher = more loop closures")
-
+parser.add_argument("--checkpoint_path", type=str, default=os.path.expandvars("/home/$USER/scratch/checkpoints/vggt-omega/vggt_omega_1b_512.pt"), help="Path to the VGGT-Omega checkpoint.")
 
 def main():
     """
@@ -71,12 +71,11 @@ def main():
         clip_model, clip_preprocess = None, None
         clip_tokenizer = None
 
-    model = VGGT()
-    _URL = "https://huggingface.co/facebook/VGGT-1B/resolve/main/model.pt"
-    model.load_state_dict(torch.hub.load_state_dict_from_url(_URL))
+    model = VGGTOmegaModel(args.checkpoint_path)
 
     model.eval()
-    model = model.to(torch.bfloat16)  # use half precision
+
+    # VGGT-Omega has mixed precision, so we can't use bfloat16 like with VGGT-SPARK.
     model = model.to(device)
 
     # Use the provided image folder path

@@ -10,7 +10,9 @@ from scipy.linalg import rq
 
 from vggt.utils.geometry import closed_form_inverse_se3, unproject_depth_map_to_point_map
 from vggt.utils.pose_enc import pose_encoding_to_extri_intri
-from vggt.utils.load_fn import load_and_preprocess_images
+
+# VGGT-Omega preprocesses at 512/patch-16, not VGGT's 518/patch-14, so its own loader must be used.
+from vggt_omega.utils.load_fn import load_and_preprocess_images
 
 from vggt_slam.slam_utils import compute_image_embeddings, Accumulator
 from vggt_slam.loop_closure import ImageRetrieval
