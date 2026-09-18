@@ -14,6 +14,7 @@ import vggt_slam.slam_utils as utils
 from vggt_slam.solver import Solver
 from vggt_slam.submap import Submap
 
+from vggt_slam.semantic_mask import SemanticMasker
 from vggt_slam.vggt_omega_wrapper import VGGTOmegaModel
 
 parser = argparse.ArgumentParser(description="VGGT-SLAM demo")
@@ -32,6 +33,8 @@ parser.add_argument("--max_loops", type=int, default=1, help="ONLY DEFAULT OF 1 
 parser.add_argument("--min_disparity", type=float, default=50, help="Minimum disparity to generate a new keyframe")
 parser.add_argument("--conf_threshold", type=float, default=25.0, help="Initial percentage of low-confidence points to filter out")
 parser.add_argument("--lc_thres", type=float, default=0.95, help="Threshold for image retrieval. Range: [0, 1.0]. Higher = more loop closures")
+parser.add_argument("--semantic_mask", action="store_true", help="Segment objects with SAM3 and treat them as dynamic, whether or not they are moving.")
+parser.add_argument("--mask_prompts", type=str, nargs="+", default=["person"], help="Object types the semantic mask segments, as SAM3 text prompts. Defaults to people, who move often enough to be worth masking on sight.")
 parser.add_argument("--checkpoint_path", type=str, default=os.path.expandvars("/home/$USER/scratch/checkpoints/vggt-omega/vggt_omega_1b_512.pt"), help="Path to the VGGT-Omega checkpoint.")
 
 def main():
@@ -70,6 +73,9 @@ def main():
     else:
         clip_model, clip_preprocess = None, None
         clip_tokenizer = None
+
+    semantic_masker = SemanticMasker(prompts=args.mask_prompts) if args.semantic_mask else None
+    mask_root = os.path.dirname(args.log_path)
 
     model = VGGTOmegaModel(args.checkpoint_path)
 
@@ -112,6 +118,10 @@ def main():
             print(image_names_subset)
             t1 = time.time()
             predictions = solver.run_predictions(image_names_subset, model, args.max_loops, clip_model, clip_preprocess)
+            # Written for downstream reconstruction only, predictions are untouched.
+            if semantic_masker is not None:
+                semantic_masker.save(predictions, image_names_subset, mask_root)
+
             print("Solver total time", time.time()-t1)
             print(count, "submaps processed")
 
